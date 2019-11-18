@@ -1,6 +1,6 @@
 # IMU_EKF
 
-This is a C++ implementation of an Error State Kalman Filter or Multiplicative Kalman Filter roughly based on [Attitude Error Representations for Kalman Filtering](https://www.researchgate.net/publication/245432681_Attitude_Error_Representations_for_Kalman_Filtering) by Landis Markley suitable for platform.io projects. In contrast to the paper I extended the state to x,y,z position, x,y,z velocities and x,y,z accelerations. Instead of the gyro drift I added the angular velocity to the state. Also I use the quaternion to rotation matrix transformation from [Euclideanspace](https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm).
+This is a C++ implementation of an Error State Kalman Filter or Multiplicative Kalman Filter roughly based on [Attitude Error Representations for Kalman Filtering](https://www.researchgate.net/publication/245432681_Attitude_Error_Representations_for_Kalman_Filtering) by Landis Markley suitable for platform.io projects to fuse IMU measurements (gyroscope, accelerometer and magnetometer). In contrast to the paper I extended the state to x,y,z position, x,y,z velocities and x,y,z accelerations. Be aware that the linear velocity and position estimates are of no use. I included them just as an experiment. Instead of the gyro drift I added the angular velocity to the state. Also I use the quaternion to rotation matrix transformation from [Euclideanspace](https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm).
 
 ## Dependencies
 
@@ -19,7 +19,7 @@ Eigen::Matrix<float, 3, 1> V; // hard-iron
 float incl; // inclination
 float B; // geomagnetic field strength
 
-ESKF<float> filter;
+IMU_EKF::ESKF<float> filter;
 
 void setup()
 {
@@ -56,6 +56,6 @@ void loop()
     float roll, pitch, yaw;
     filter.getAttitude(roll, pitch, yaw);
     // or quaternion
-    Quaternion<float> q = filter.getAttitude();
+    IMU_EKF::Quaternion<float> q = filter.getAttitude();
 }
 ```
