@@ -4,6 +4,9 @@
 #include <Eigen.h>
 #include "utilities.h"
 
+namespace IMU_EKF
+{
+
 enum QuaternionIndex
 {
     v1,
@@ -69,20 +72,21 @@ public:
     {
         Eigen::Matrix<precision, 3, 1> angles;
         // from https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+        // rotation sequence R = Rx * Ry * Rz
         // roll (x-axis rotation)
-        precision sinr_cosp = 2 * (w_ * v1_ + v2_ * v3_);
+        precision sinr_cosp = 2 * (v2_ * v3_ - w_ * v1_);
         precision cosr_cosp = 1 - 2 * (v1_ * v1_ + v2_ * v2_);
         angles[0] = std::atan2(sinr_cosp, cosr_cosp);
 
         // pitch (y-axis rotation)
-        precision sinp = 2 * (w_ * v2_ - v3_ * v1_);
+        precision sinp = -2 * (w_ * v2_ + v3_ * v1_);
         if (std::abs(sinp) >= 1)
             angles[1] = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
         else
             angles[1] = std::asin(sinp);
 
         // yaw (z-axis rotation)
-        precision siny_cosp = 2 * (w_ * v3_ + v1_ * v2_);
+        precision siny_cosp = 2 * (v1_ * v2_ - w_ * v3_);
         precision cosy_cosp = 1 - 2 * (v2_ * v2_ + v3_ * v3_);
         angles[2] = std::atan2(siny_cosp, cosy_cosp);
 
@@ -134,3 +138,4 @@ Quaternion<precision> operator+(const Quaternion<precision> &l, const Quaternion
 {
     return Quaternion<precision>(l[v1] * r[v1], l[v2] * r[v2], l[v3] * r[v3], l[w] * r[w]);
 }
+} // namespace IMU_EKF

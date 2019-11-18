@@ -1,7 +1,8 @@
 #pragma once
 
 #include <Eigen.h>
-
+namespace IMU_EKF
+{
 template <typename precision, typename Derived>
 Eigen::Matrix<precision, 3, 3> toCrossMatrix(const Eigen::DenseBase<Derived> &v)
 {
@@ -21,3 +22,4 @@ Eigen::Matrix<precision, 3, 3> toRotationMatrix(const Eigen::MatrixBase<Derived>
     rotationMatrix = Eigen::Matrix<precision, 3, 3>::Identity() - toCrossMatrix<precision>(v) - 0.5 * (norm_sqr * Eigen::Matrix<precision, 3, 3>::Identity() - vvT);
     return rotationMatrix;
 }
+} // namespace IMU_EKF

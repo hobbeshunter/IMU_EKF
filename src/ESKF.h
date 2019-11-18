@@ -9,11 +9,15 @@
 #define MEASSUREMENT_ACC_SIZE 3
 #define MEASSUREMENT_MAG_SIZE 3
 
+namespace IMU_EKF
+{
+
 template <typename precision>
 class ESKF
 {
 public:
     ESKF();
+    void init();
     void initWithAcc(const float ax, const float ay, const float az);
     void initWithAccAndMag(const float ax, const float ay, const float az, const float mx, const float my, const float mz, const Eigen::Matrix<precision, 3, 3> &Winv, const Eigen::Matrix<precision, 3, 1> &V);
     void predict(precision dt);
@@ -37,6 +41,7 @@ private:
     Eigen::Matrix<precision, MEASSUREMENT_ACC_SIZE, MEASSUREMENT_ACC_SIZE> R_Acc_;
     Eigen::Matrix<precision, MEASSUREMENT_MAG_SIZE, MEASSUREMENT_MAG_SIZE> R_Mag_;
 };
+} // namespace IMU_EKF
 
 // ugly but necessary
 // to get templates working

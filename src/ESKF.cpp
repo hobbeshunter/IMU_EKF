@@ -27,9 +27,19 @@
 #define G_TO_MS2 (9.81)
 #endif
 
-template <typename precision>
-ESKF<precision>::ESKF() : qref_()
+namespace IMU_EKF
 {
+
+template <typename precision>
+ESKF<precision>::ESKF()
+{
+    init();
+}
+
+template <typename precision>
+void ESKF<precision>::init()
+{
+    qref_ = Quaternion<precision>();
     x_.setZero();
     P_.setIdentity();
     Q_.setIdentity();
@@ -61,44 +71,48 @@ ESKF<precision>::ESKF() : qref_()
     R_Acc_(2, 2) = 0.0100094303 * G_TO_MS2;
 
     R_Mag_.setIdentity();
-    R_Mag_(0, 0) = 0.0027032918;
-    R_Mag_(1, 1) = 0.0011253271;
-    R_Mag_(2, 2) = 0.0016151764;
+    R_Mag_(0, 0) = 0.00004;
+    R_Mag_(1, 1) = 0.00004;
+    R_Mag_(2, 2) = 0.00004;
 }
 
 template <typename precision>
 void ESKF<precision>::initWithAcc(const float ax, const float ay, const float az)
 {
-    x_.setZero();
-    // see https://cache.freescale.com/files/sensors/doc/app_note/AN3461.pdf
-    // eq. 38
-    precision roll = std::atan2(ay, SGN(-az) * sqrt(az * az + 0.01 * ax * ax));
-    // eq. 37
-    precision pitch = std::atan(-ax / sqrt(ay * ay + az * az));
+    init();
 
-    // see https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Euler_Angles_to_Quaternion_Conversion
+    // see https://cache.freescale.com/files/sensors/doc/app_note/AN3461.pdf
+    // rotation sequence R = Rx * Ry * Rz
+    // eq. 38
+    precision roll = std::atan2(ay, SGN(-az) * std::sqrt(az * az + 0.01 * ax * ax));
+    // eq. 37
+    precision pitch = std::atan(-ax / std::sqrt(ay * ay + az * az));
+
     precision sr05 = std::sin(0.5 * roll);
     precision cr05 = std::cos(0.5 * roll);
     precision sp05 = std::sin(0.5 * pitch);
     precision cp05 = std::cos(0.5 * pitch);
-    qref_ = Quaternion<precision>(sr05 * cp05, cr05 * sp05, -sr05 * sp05, cr05 * cp05);
+    qref_ = Quaternion<precision>(sr05, 0, 0, cr05) * Quaternion<precision>(0, sp05, 0, cp05);
 }
 
 template <typename precision>
 void ESKF<precision>::initWithAccAndMag(const float ax, const float ay, const float az, const float mx, const float my, const float mz, const Eigen::Matrix<precision, 3, 3> &Winv, const Eigen::Matrix<precision, 3, 1> &V)
 {
+    init();
+
     // see https://cache.freescale.com/files/sensors/doc/app_note/AN3461.pdf
+    // rotation sequence R = Rx * Ry * Rz
     // eq. 38
-    precision roll = std::atan2(ay, SGN(-az) * sqrt(az * az + 0.01 * ax * ax));
+    precision roll = std::atan2(ay, SGN(-az) * std::sqrt(az * az + 0.01 * ax * ax));
     // eq. 37
-    precision pitch = std::atan(-ax / sqrt(ay * ay + az * az));
+    precision pitch = std::atan(-ax / std::sqrt(ay * ay + az * az));
 
     // see https://www.nxp.com/docs/en/application-note/AN4246.pdf
     // eq. 6 - 10
-    precision sr = sin(roll);
-    precision cr = cos(roll);
-    precision sp = sin(pitch);
-    precision cp = cos(pitch);
+    precision sr = std::sin(roll);
+    precision cr = std::cos(roll);
+    precision sp = std::sin(pitch);
+    precision cp = std::cos(pitch);
 
     Eigen::Matrix<precision, 3, 3> RxT;
     RxT << 1, 0, 0,
@@ -117,17 +131,14 @@ void ESKF<precision>::initWithAccAndMag(const float ax, const float ay, const fl
 
     precision yaw = -atan2(-Bf(1), Bf(0));
 
-    // see https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Euler_Angles_to_Quaternion_Conversion
     precision sr05 = std::sin(0.5 * roll);
     precision cr05 = std::cos(0.5 * roll);
     precision sp05 = std::sin(0.5 * pitch);
     precision cp05 = std::cos(0.5 * pitch);
     precision sy05 = std::sin(0.5 * yaw);
     precision cy05 = std::cos(0.5 * yaw);
-    qref_ = Quaternion<precision>(sr05 * cp05 * cy05 - cr05 * sp05 * sy05,
-                                  cr05 * sp05 * cy05 + sr05 * cp05 * sy05,
-                                  cr05 * cp05 * sy05 - sr05 * sp05 * cy05,
-                                  cr05 * cp05 * cy05 + sr05 * sp05 * sy05);
+
+    qref_ = Quaternion<precision>(sr05, 0, 0, cr05) * Quaternion<precision>(0, sp05, 0, cp05) * Quaternion<precision>(0, 0, sy05, cy05);
 }
 
 template <typename precision>
@@ -350,5 +361,6 @@ void ESKF<precision>::getAcceleration(float &x, float &y, float &z) const
     y = x_(7);
     z = x_(8);
 }
+} // namespace IMU_EKF
 
 #endif // ESKF_IMPL
